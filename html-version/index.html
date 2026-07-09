@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SLA | Spider League Association</title>
+<link rel="icon" type="image/png" href="images/logo.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+:root{--green:#CC0000;--green2:#8B0000;--green3:#5C0000;--bg:#080808;--bg2:#0a0a0a}
+body{background:var(--bg);color:#e0e0e0;font-family:'Inter',sans-serif;overflow-x:hidden}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:rgba(204,0,0,0.3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(204,0,0,0.5)}
+::selection{background:rgba(204,0,0,0.2);color:var(--green)}
+a,button,input,select,textarea{font-family:inherit}
+
+/* background */
+#bg{position:fixed;inset:0;z-index:0;background:var(--bg);overflow:hidden;pointer-events:none}
+#bg-gradient{position:absolute;inset:0;background:linear-gradient(180deg,#080808,#0a0a0a,#080808)}
+#bg-grid{position:absolute;inset:0;opacity:.02;background-image:linear-gradient(rgba(204,0,0,0.3)1px,transparent 1px),linear-gradient(90deg,rgba(204,0,0,0.3)1px,transparent 1px);background-size:60px 60px}
+#bg-radial{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(204,0,0,0.03)0%,transparent 70%)}
+.hexagon{position:absolute;border:1px solid rgba(204,0,0,.08);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);animation:hexPulse 4s ease-in-out infinite}
+@keyframes hexPulse{0%,100%{opacity:.05;transform:scale(1)}50%{opacity:.2;transform:scale(1.1)}}
+.blob{position:absolute;border-radius:50%;filter:blur(120px);animation:blobFloat 10s ease-in-out infinite}
+@keyframes blobFloat{0%,100%{transform:translate(0,0)scale(1);opacity:.08}33%{transform:translate(30px,-20px)scale(1.1);opacity:.15}66%{transform:translate(-20px,30px)scale(.95);opacity:.1}}
+#particles-canvas{position:absolute;inset:0;pointer-events:none}
+.splatter{position:absolute;border-radius:50%;filter:blur(8px);pointer-events:none}
+
+/* loading */
+#loading{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);transition:opacity .6s ease,visibility .6s ease}
+#loading.hide{opacity:0;visibility:hidden}
+#loading-logo{width:96px;height:96px;position:relative;display:flex;align-items:center;justify-content:center}
+#loading-ring{width:96px;height:96px;border-radius:50%;border:2px solid transparent;border-top-color:var(--green);border-right-color:var(--green2);animation:spin 3s linear infinite;position:absolute;box-shadow:0 0 20px rgba(204,0,0,.2)}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading-dragon{width:56px;height:56px}
+#loading-title{font-size:24px;font-weight:700;color:var(--green);letter-spacing:4px;margin-top:32px}
+#loading-sub{font-size:10px;color:#555;letter-spacing:3px;text-transform:uppercase;margin-top:4px}
+#loading-dots{display:flex;gap:4px;margin-top:24px}
+#loading-dots span{width:8px;height:8px;border-radius:50%;background:var(--green);animation:dotBounce .8s ease-in-out infinite}
+#loading-dots span:nth-child(2){animation-delay:.15s}
+#loading-dots span:nth-child(3){animation-delay:.3s}
+@keyframes dotBounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-6px);opacity:1}}
+
+/* cursor */
+#cursor{position:fixed;width:24px;height:24px;border-radius:50%;border:2px solid rgba(204,0,0,.4);pointer-events:none;z-index:9999;transition:width .2s,height .2s,background-color .2s,border-color .2s;transform:translate(-50%,-50%);box-shadow:0 0 15px rgba(204,0,0,.15),inset 0 0 15px rgba(204,0,0,.05)}
+#cursor.big{width:48px;height:48px;border-color:rgba(204,0,0,.6);background:rgba(204,0,0,.05)}
+
+#cursor-trail{position:fixed;inset:0;pointer-events:none;z-index:9998}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(204,0,0,.2);border-top-color:var(--green);border-radius:50%;animation:spin .6s linear infinite}
+
+/* navbar */
+#navbar{position:fixed;top:0;left:0;right:0;z-index:100;transition:.5s;transform:translateY(-100%);animation:slideDown .6s ease-out forwards}
+@keyframes slideDown{to{transform:translateY(0)}}
+#navbar.scrolled{background:rgba(8,8,8,.8);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-bottom:1px solid rgba(204,0,0,.1);box-shadow:0 0 30px rgba(204,0,0,.05)}
+.nav-inner{max-width:1280px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px}
+@media(min-width:640px){.nav-inner{height:80px}}
+.nav-logo{display:flex;align-items:center;gap:12px;background:none;border:none;color:inherit}
+.nav-logo-icon{width:36px;height:36px;border-radius:10px;background:rgba(204,0,0,.1);border:1px solid rgba(204,0,0,.2);display:flex;align-items:center;justify-content:center;transition:.3s}
+.nav-logo:hover .nav-logo-icon{transform:scale(1.1)rotate(-5deg)}
+.nav-logo-text{display:none}
+@media(min-width:640px){.nav-logo-text{display:block}}
+.nav-logo-text h1{font-size:18px;font-weight:700;color:#fff;letter-spacing:2px;transition:.3s}
+.nav-logo:hover .nav-logo-text h1{color:var(--green)}
+.nav-logo-text p{font-size:10px;color:#555;letter-spacing:2px;text-transform:uppercase;line-height:1.2}
+.nav-links{display:none}
+@media(min-width:1024px){.nav-links{display:flex;align-items:center;gap:4px}}
+.nav-link{position:relative;padding:8px 12px;font-size:14px;color:#999;background:none;border:none;border-radius:8px;transition:.3s}
+.nav-link:hover{color:var(--green);background:rgba(255,255,255,.02)}
+.nav-link::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:0;height:2px;background:var(--green);transition:.3s;border-radius:1px}
+.nav-link:hover::after{width:50%}
+.nav-link.active{color:var(--green)}
+.nav-link.active::after{width:50%}
+.nav-discord{background:var(--green);color:#000;padding:8px 16px;border-radius:12px;font-size:14px;font-weight:600;text-decoration:none;margin-left:8px;transition:.3s;box-shadow:0 0 20px rgba(204,0,0,.2)}
+.nav-discord:hover{background:var(--green2);box-shadow:0 0 30px rgba(204,0,0,.4)}
+.nav-mobile-btn{display:block;background:none;border:none;color:#999;padding:8px;border-radius:10px}
+@media(min-width:1024px){.nav-mobile-btn{display:none}}
+#nav-mobile{display:none;border-top:1px solid rgba(204,0,0,.1);background:rgba(8,8,8,.95);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);overflow:hidden}
+#nav-mobile.open{display:block}
+#nav-mobile-inner{padding:16px}
+#nav-mobile-inner .nav-link{display:block;width:100%;text-align:left;padding:12px 16px;border-radius:12px}
+#nav-mobile-inner .nav-discord{display:block;text-align:center;margin:8px 0 0 0;padding:12px}
+
+/* pages */
+.page{display:none;position:relative;z-index:1;min-height:100vh;padding-top:80px}
+.page.active{display:block;animation:pageIn .4s ease}
+@keyframes pageIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.container{max-width:1024px;margin:0 auto;padding:0 16px}
+
+/* hero page */
+#hero{min-height:calc(100vh - 80px);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.hero-content{text-align:center;z-index:2;max-width:896px;padding:0 16px}
+.hero-logo{width:96px;height:96px;margin:0 auto 32px;border-radius:16px;background:rgba(204,0,0,.05);border:1px solid rgba(204,0,0,.2);display:flex;align-items:center;justify-content:center;animation:floatGlow 3s ease-in-out infinite}
+@keyframes floatGlow{0%,100%{transform:translateY(0);filter:drop-shadow(0 0 20px rgba(204,0,0,.3))}50%{transform:translateY(-10px);filter:drop-shadow(0 0 40px rgba(204,0,0,.6))}}
+.hero-logo svg{width:64px;height:64px}
+.hero-title{font-size:32px;font-weight:800;color:#fff;margin-bottom:12px;letter-spacing:-.5px}
+.hero-title span{background:linear-gradient(135deg,var(--green),var(--green2),var(--green3));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+@media(min-width:640px){.hero-title{font-size:48px}}
+@media(min-width:768px){.hero-title{font-size:64px}}
+.hero-sub{font-size:14px;color:#888;max-width:576px;margin:0 auto 40px;line-height:1.7}
+@media(min-width:640px){.hero-sub{font-size:16px}}
+.hero-btns{display:flex;flex-direction:column;align-items:center;gap:12px}
+@media(min-width:640px){.hero-btns{flex-direction:row;justify-content:center}}
+.hero-btn{position:relative;overflow:hidden;padding:12px 24px;border:none;border-radius:16px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;text-decoration:none}
+@media(min-width:640px){.hero-btn{padding:14px 32px}}
+.hero-btn-primary{background:var(--green);color:#000}
+.hero-btn-primary:hover{box-shadow:0 0 30px rgba(204,0,0,.4)}
+.hero-btn-primary::after{content:'';position:absolute;inset:0;background:var(--green2);transform:translateX(-100%);transition:.3s}
+.hero-btn-primary:hover::after{transform:translateX(0)}
+.hero-btn-primary span{position:relative;z-index:1}
+.hero-btn-secondary{border:1px solid rgba(204,0,0,.3);color:var(--green);background:transparent}
+.hero-btn-secondary:hover{background:rgba(204,0,0,.1);border-color:rgba(204,0,0,.5)}
+
+/* tickets page */
+.tab-bar{display:flex;gap:4px;padding:6px;border-radius:16px;border:1px solid rgba(204,0,0,.1);background:rgba(10,10,10,.6);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);overflow-x:auto;margin-bottom:40px}
+.tab-btn{position:relative;padding:10px 16px;font-size:14px;font-weight:500;border:none;background:none;border-radius:12px;white-space:nowrap;color:#888;transition:.3s}
+.tab-btn.active{color:#000}
+.tab-indicator{position:absolute;inset:0;background:linear-gradient(135deg,var(--green),var(--green2));border-radius:12px;transition:.3s ease}
+.tab-label{position:relative;z-index:1}
+.tab-content{opacity:0;transform:translateY(10px);animation:tabFade .3s ease forwards}
+@keyframes tabFade{to{opacity:1;transform:translateY(0)}}
+
+/* cards */
+.card{padding:24px 32px;border-radius:16px;border:1px solid rgba(204,0,0,.1);background:rgba(10,10,10,.6);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+.card-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.card-icon{padding:10px;border-radius:12px;border:1px solid rgba(204,0,0,.2);background:rgba(204,0,0,.1);display:flex;align-items:center;justify-content:center}
+.card-icon svg{width:20px;height:20px;color:var(--green)}
+.card-title{font-size:18px;font-weight:600;color:#fff}
+.card-desc{font-size:12px;color:#888}
+
+/* inputs */
+input,select,textarea{width:100%;padding:12px 16px;background:var(--bg);border:1px solid rgba(204,0,0,.2);border-radius:12px;color:#fff;font-size:14px;outline:none;transition:.3s}
+input:focus,select:focus,textarea:focus{border-color:rgba(204,0,0,.5);box-shadow:0 0 20px rgba(204,0,0,.1)}
+input::placeholder,textarea::placeholder{color:#555}
+select{appearance:none}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border:none;border-radius:12px;font-size:14px;font-weight:600;transition:.3s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--green);color:#000}
+.btn-primary:hover{background:var(--green2);box-shadow:0 0 20px rgba(204,0,0,.4)}
+.btn-primary:disabled{opacity:.4}
+.btn-ghost{border:1px solid rgba(255,255,255,.1);color:#ccc;background:transparent}
+.btn-ghost:hover{background:rgba(255,255,255,.05)}
+.btn-danger{background:rgba(255,80,80,.1);color:#ff5050;border:1px solid rgba(255,80,80,.2)}
+.btn-danger:hover{background:rgba(255,80,80,.2)}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.btn-full{width:100%}
+.btn-gradient{background:linear-gradient(135deg,var(--green),var(--green2));color:#000}
+.btn-gradient:hover{box-shadow:0 0 30px rgba(204,0,0,.3)}
+
+/* badges */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;border:1px solid}
+.badge-pending{color:#facc15;border-color:rgba(250,204,21,.2);background:rgba(250,204,21,.05)}
+.badge-accepted{color:var(--green);border-color:rgba(204,0,0,.2);background:rgba(204,0,0,.05)}
+.badge-denied{color:#ff5050;border-color:rgba(255,80,80,.2);background:rgba(255,80,80,.05)}
+.badge-review{color:#60a5fa;border-color:rgba(96,165,250,.2);background:rgba(96,165,250,.05)}
+
+.grid-2{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:640px){.grid-2{grid-template-columns:1fr 1fr}}
+.grid-4{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(min-width:640px){.grid-4{grid-template-columns:repeat(4,1fr)}}
+
+.ticket-card{padding:20px;border-radius:16px;border:1px solid rgba(204,0,0,.1);background:rgba(10,10,10,.6);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);transition:.3s}
+.ticket-card:hover{border-color:rgba(204,0,0,.2)}
+.ticket-info{font-size:12px;color:#777;margin-top:4px}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;z-index:9997;background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;visibility:hidden;transition:.3s}
+.modal-overlay.open{opacity:1;visibility:visible}
+.modal{width:100%;max-width:512px;max-height:90vh;overflow-y:auto;padding:24px;border-radius:16px;border:1px solid rgba(204,0,0,.2);background:rgba(10,10,10,.95);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);transform:scale(.9);transition:.3s}
+.modal-overlay.open .modal{transform:scale(1)}
+.modal-title{font-size:18px;font-weight:600;color:#fff;margin-bottom:16px}
+
+/* toast */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:12px;pointer-events:none}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:8px;min-width:300px;padding:12px 16px;border-radius:12px;border:1px solid rgba(204,0,0,.3);background:rgba(10,10,10,.95);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 0 20px rgba(204,0,0,.1);animation:toastIn .3s ease,toastOut .3s ease 3.7s forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(40px)scale(.9)}to{opacity:1;transform:translateY(0)scale(1)}}
+@keyframes toastOut{to{opacity:0;transform:translateX(100px)scale(.9)}}
+.toast-icon{width:20px;height:20px;flex-shrink:0}
+.toast-msg{flex:1;font-size:13px;color:#ddd}
+.toast.success .toast-icon{color:var(--green)}
+.toast.error .toast-icon{color:#ff5050}
+.toast.info .toast-icon{color:#60a5fa}
+
+/* filter tabs */
+.filter-bar{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.filter-btn{padding:5px 12px;border-radius:8px;font-size:11px;font-weight:500;border:1px solid rgba(204,0,0,.1);background:none;color:#888;white-space:nowrap;transition:.3s}
+.filter-btn:hover{border-color:rgba(204,0,0,.3)}
+.filter-btn.active{background:var(--green);color:#000;border-color:var(--green)}
+
+/* rules */
+.section-title{font-size:24px;font-weight:700;color:#fff;text-align:center;margin-bottom:16px}
+@media(min-width:640px){.section-title{font-size:32px}}
+.rule-card{padding:20px;border-radius:16px;border:1px solid rgba(204,0,0,.1);background:rgba(10,10,10,.6);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);transition:.3s}
+.rule-card:hover{border-color:rgba(204,0,0,.2)}
+.rule-card h3{font-size:14px;font-weight:600;color:#fff;margin-bottom:8px}
+.rule-card p{font-size:12px;color:#888;line-height:1.6}
+
+/* footer */
+#footer{padding:32px 16px;border-top:1px solid rgba(204,0,0,.05);margin-top:80px}
+.footer-inner{display:flex;flex-direction:column;align-items:center;gap:16px}
+@media(min-width:640px){.footer-inner{flex-direction:row;justify-content:space-between}}
+.footer-brand{display:flex;align-items:center;gap:8px}
+.footer-brand svg{width:20px;height:20px}
+.footer-brand span{font-size:14px;font-weight:600;color:#888}
+.footer-copy{font-size:12px;color:#444}
+
+/* admin stats */
+.stat-card{padding:16px;border-radius:12px;border:1px solid rgba(204,0,0,.1);background:rgba(10,10,60,.6);transition:.3s;text-align:left}
+.stat-card:hover,.stat-card.active{border-color:rgba(204,0,0,.3);background:rgba(204,0,0,.05)}
+.stat-card h3{font-size:24px;font-weight:700;color:#fff}
+.stat-card p{font-size:12px;color:#888;margin-top:4px}
+
+.page-padding{padding:40px 0 80px}
+@media(min-width:640px){.page-padding{padding:60px 0 80px}}
+
+.hidden{display:none!important}
+.flex{display:flex}
+.flex-col{flex-direction:column}
+.items-center{align-items:center}
+.justify-between{justify-content:space-between}
+.justify-end{justify-content:flex-end}
+.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}.gap-6{gap:24px}
+.mb-2{margin-bottom:8px}.mb-4{margin-bottom:16px}.mb-6{margin-bottom:24px}
+.mt-2{margin-top:8px}.mt-4{margin-top:16px}.mt-6{margin-top:24px}
+.text-center{text-align:center}
+.text-sm{font-size:12px}
+.text-xs{font-size:11px;color:#888}
+.text-green{color:var(--green)}
+.text-white{color:#fff}
+.text-mono{font-family:monospace}
+.break-all{word-break:break-all}
+.w-full{width:100%}
+.flex-1{flex:1}
+.min-w-0{min-width:0}
+.overflow-x-auto{overflow-x:auto}
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND -->
+<div id="bg">
+  <div id="bg-gradient"></div>
+  <div id="bg-grid"></div>
+  <div id="bg-radial"></div>
+  <canvas id="particles-canvas"></canvas>
+</div>
+
+<!-- CURSOR -->
+<div id="cursor"></div>
+<canvas id="cursor-trail"></canvas>
+
+<!-- LOADING -->
+<div id="loading">
+  <div id="loading-logo">
+    <div id="loading-ring"></div>
+    <img src="images/logo.png" id="loading-dragon" alt="SLA" style="width:56px;height:56px;border-radius:12px;object-fit:cover">
+  </div>
+  <div id="loading-title">SLA</div>
+  <div id="loading-sub">Spider League Association</div>
+  <div id="loading-dots"><span></span><span></span><span></span></div>
+</div>
+
+<!-- NAVBAR -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <button class="nav-logo" onclick="navigateTo('home')">
+      <div class="nav-logo-icon">
+        <img src="images/logo.png" alt="SLA" style="width:24px;height:24px;border-radius:6px;object-fit:cover">
+      </div>
+      <div class="nav-logo-text">
+        <h1>SLA</h1>
+        <p>Spider League Association</p>
+      </div>
+    </button>
+    <div class="nav-links">
+      <button class="nav-link active" onclick="navigateTo('home')" data-page="home">Home</button>
+      <button class="nav-link" onclick="navigateTo('tickets')" data-page="tickets">Tickets</button>
+      <button class="nav-link" onclick="navigateTo('my-tickets')" data-page="my-tickets">My Tickets</button>
+      <button class="nav-link" onclick="navigateTo('admin')" data-page="admin">Admin</button>
+      <button class="nav-link" onclick="navigateTo('rules')" data-page="rules">Rules</button>
+      <a class="nav-discord" href="https://discord.gg/Du7c96GHps" target="_blank" id="nav-discord-desk">Discord</a>
+    </div>
+    <button class="nav-mobile-btn" onclick="toggleMobile()" id="mobile-btn">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  <div id="nav-mobile">
+    <div id="nav-mobile-inner">
+      <button class="nav-link active" onclick="navigateTo('home');toggleMobile()" data-page="home">Home</button>
+      <button class="nav-link" onclick="navigateTo('tickets');toggleMobile()" data-page="tickets">Tickets</button>
+      <button class="nav-link" onclick="navigateTo('my-tickets');toggleMobile()" data-page="my-tickets">My Tickets</button>
+      <button class="nav-link" onclick="navigateTo('admin');toggleMobile()" data-page="admin">Admin</button>
+      <button class="nav-link" onclick="navigateTo('rules');toggleMobile()" data-page="rules">Rules</button>
+      <a class="nav-discord" href="https://discord.gg/Du7c96GHps" target="_blank" id="nav-discord-mob">Discord</a>
+    </div>
+  </div>
+</nav>
+
+<!-- PAGE: HOME -->
+<div class="page active" id="page-home">
+  <div id="hero">
+    <div class="hero-content">
+      <div class="hero-logo">
+        <img src="images/logo.png" alt="SLA" style="width:64px;height:64px;border-radius:14px;object-fit:cover">
+      </div>
+      <h1 class="hero-title">SLA <span>Tickets & Verification</span></h1>
+      <p class="hero-sub">Verify your Player ID and Discord account before submitting item tickets for review by the SLA administration team.</p>
+      <div class="hero-btns">
+        <button class="hero-btn hero-btn-primary" onclick="navigateTo('tickets')"><span>Make a Ticket</span></button>
+        <a class="hero-btn hero-btn-secondary" href="https://discord.com" target="_blank">Discord Server</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" style="padding-bottom:40px">
+    <h2 class="section-title">Rules & Guidelines</h2>
+    <div class="grid-2" style="margin-top:32px">
+      <div class="rule-card"><h3>Player ID</h3><p>Must be numeric only. Once bound, it is permanently linked to your device.</p></div>
+      <div class="rule-card"><h3>Discord</h3><p>Must start with @. Your Discord account must be verified before submitting tickets.</p></div>
+      <div class="rule-card"><h3>Tickets</h3><p>Provide accurate information. False submissions may result in a ban.</p></div>
+      <div class="rule-card"><h3>Conduct</h3><p>Respect staff decisions. Abusive behavior will not be tolerated.</p></div>
+    </div>
+  </div>
+
+  <footer id="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <img src="images/logo.png" alt="SLA" style="width:20px;height:20px;border-radius:5px;object-fit:cover">
+          <span>SLA &mdash; Spider League Association</span>
+        </div>
+        <p class="footer-copy">&copy; 2026 SLA. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<!-- PAGE: TICKETS -->
+<div class="page" id="page-tickets">
+  <div class="page-padding">
+    <div class="container">
+      <div class="tab-bar" id="tab-bar"></div>
+      <div id="tab-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: MY TICKETS -->
+<div class="page" id="page-my-tickets">
+  <div class="page-padding">
+    <div class="container" id="my-tickets-content"></div>
+  </div>
+</div>
+
+<!-- PAGE: ADMIN -->
+<div class="page" id="page-admin">
+  <div class="page-padding">
+    <div class="container" id="admin-content"></div>
+  </div>
+</div>
+
+<!-- PAGE: RULES -->
+<div class="page" id="page-rules">
+  <div class="page-padding">
+    <div class="container">
+      <h2 class="section-title">Rules & Guidelines</h2>
+      <div class="grid-2" style="margin-top:32px">
+        <div class="rule-card"><h3>Player ID</h3><p>Must be numeric only. Once bound, it is permanently linked to your device.</p></div>
+        <div class="rule-card"><h3>Discord</h3><p>Must start with @. Your Discord account must be verified before submitting tickets.</p></div>
+        <div class="rule-card"><h3>Tickets</h3><p>Provide accurate information. False submissions may result in a ban.</p></div>
+        <div class="rule-card"><h3>Conduct</h3><p>Respect staff decisions. Abusive behavior will not be tolerated.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal" style="position:relative">
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<script>
+// ===== APP STATE =====
+const STORE = {
+  get(k,def){try{const v=localStorage.getItem('sla_'+k);return v?JSON.parse(v):def}catch{return def}},
+  set(k,v){try{localStorage.setItem('sla_'+k,JSON.stringify(v))}catch{}},
+  remove(k){try{localStorage.removeItem('sla_'+k)}catch{}}
+};
+
+let state = {
+  playerId: STORE.get('player_id', null),
+  discordUsername: STORE.get('discord_username', null),
+  deviceLinked: STORE.get('device_linked', false),
+  tickets: STORE.get('tickets', []),
+  isAdmin: STORE.get('admin_auth', false),
+  _pendingCode: STORE.get('pending_code', null),
+  _pendingUsername: STORE.get('pending_username', null),
+};
+
+const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:3001/api'
+  : 'https://sla-bot.fly.dev/api';
+
+async function apiPost(endpoint, body) {
+  try {
+    const r = await fetch(API_URL + endpoint, { method:'POST', headers:{'Content-Type':'application/json','X-API-Secret':'my-secret-key-2026'}, body:JSON.stringify(body) });
+    return await r.json();
+  } catch { return null; }
+}
+
+async function apiGet(endpoint) {
+  try {
+    const r = await fetch(API_URL + endpoint);
+    return await r.json();
+  } catch { return null; }
+}
+
+function saveState(){
+  STORE.set('player_id', state.playerId);
+  STORE.set('discord_username', state.discordUsername);
+  STORE.set('device_linked', state.deviceLinked);
+  STORE.set('tickets', state.tickets);
+  STORE.set('admin_auth', state.isAdmin);
+  STORE.set('pending_code', state._pendingCode);
+  STORE.set('pending_username', state._pendingUsername);
+}
+
+function updateNavDiscord(){
+  const name = state.discordUsername || 'Discord';
+  const d = document.getElementById('nav-discord-desk');
+  const m = document.getElementById('nav-discord-mob');
+  if(d)d.textContent = name;
+  if(m)m.textContent = name;
+}
+
+// ===== NAVIGATION =====
+function navigateTo(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-link[data-page="'+page+'"]').forEach(l=>l.classList.add('active'));
+  window.scrollTo({top:0});
+
+  if(page==='tickets')renderTabs();
+  if(page==='my-tickets')renderMyTicketsPage();
+  if(page==='admin')renderAdminPage();
+}
+
+// ===== BACKGROUND =====
+(function initBackground(){
+  const hexContainer = document.getElementById('bg');
+  for(let i=0;i<30;i++){
+    const el=document.createElement('div');el.className='hexagon';
+    const size=20+Math.random()*40;
+    el.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;width:${size}px;height:${size}px;animation-delay:${Math.random()*5}s;animation-duration:${4+Math.random()*4}s`;
+    hexContainer.appendChild(el);
+  }
+  const blobs=[
+    {x:15,y:20,s:400,c:'#CC0000',d:0},{x:80,y:60,s:350,c:'#8B0000',d:2},
+    {x:50,y:80,s:300,c:'#5C0000',d:4},{x:70,y:30,s:250,c:'#CC0000',d:1}
+  ];
+  blobs.forEach(b=>{
+    const el=document.createElement('div');el.className='blob';
+    el.style.cssText=`left:${b.x}%;top:${b.y}%;width:${b.s}px;height:${b.s}px;background:radial-gradient(circle,${b.c} 0%,transparent 70%);animation-delay:${b.d}s`;
+    hexContainer.appendChild(el);
+  });
+  for(let i=0;i<8;i++){
+    const el=document.createElement('div');el.className='splatter';
+    const s=100+Math.random()*200;
+    el.style.cssText=`left:${10+Math.random()*80}%;top:${10+Math.random()*80}%;width:${s}px;height:${s}px;background:radial-gradient(circle at 30% 30%,#CC0000,transparent);opacity:${.02+Math.random()*.03};transform:rotate(${Math.random()*360}deg)`;
+    hexContainer.appendChild(el);
+  }
+  const c=document.getElementById('particles-canvas'),ctx=c.getContext('2d');
+  let W,H,pts=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight}
+  resize();window.addEventListener('resize',resize);
+  for(let i=0;i<60;i++)pts.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,s:1+Math.random()*2,a:.1+Math.random()*.4});
+  function animP(){
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,Math.PI*2);ctx.fillStyle=`rgba(204,0,0,${p.a})`;ctx.fill()});
+    requestAnimationFrame(animP);
+  }
+  animP();
+})();
+
+// ===== CURSOR =====
+(function initCursor(){
+  const cursor=document.getElementById('cursor');
+  const trailCanvas=document.getElementById('cursor-trail');
+  const tctx=trailCanvas.getContext('2d');
+  let cx=window.innerWidth/2,cy=window.innerHeight/2,tx=cx,ty=cy,trails=[];
+
+  function resizeT(){trailCanvas.width=window.innerWidth;trailCanvas.height=window.innerHeight}
+  resizeT();window.addEventListener('resize',resizeT);
+
+  document.addEventListener('mousemove',e=>{tx=e.clientX;ty=e.clientY});
+
+  document.addEventListener('mouseover',e=>{
+    const btn=e.target.closest('button,a,.btn,.nav-link,.filter-btn,.tab-btn,.stat-card,.ticket-card,.hero-btn,.rule-card');
+    cursor.classList.toggle('big',!!btn);
+  });
+
+  document.addEventListener('mousedown',e=>{
+    const r=document.createElement('div');
+    r.style.cssText=`position:fixed;pointer-events:none;z-index:9997;left:${e.clientX-50}px;top:${e.clientY-50}px;width:100px;height:100px;border-radius:50%;border:2px solid rgba(204,0,0,.3);animation:ripple .6s ease-out forwards`;
+    document.body.appendChild(r);
+    setTimeout(()=>r.remove(),600);
+  });
+
+  const style=document.createElement('style');
+  style.textContent='@keyframes ripple{0%{transform:scale(.5);opacity:1}100%{transform:scale(2.5);opacity:0}}';
+  document.head.appendChild(style);
+
+  function animT(){
+    cx+=(tx-cx)*.15;cy+=(ty-cy)*.15;
+    cursor.style.left=cx+'px';cursor.style.top=cy+'px';
+    trails.push({x:cx,y:cy,a:.5,s:3});
+    if(trails.length>20)trails=trails.slice(-20);
+    tctx.clearRect(0,0,trailCanvas.width,trailCanvas.height);
+    trails.forEach(t=>{t.a*=.93;t.s*=.97;if(t.a>.02){tctx.beginPath();tctx.arc(t.x,t.y,t.s,0,Math.PI*2);tctx.fillStyle=`rgba(204,0,0,${t.a})`;tctx.fill()}});
+    if(Math.random()<.05){
+      const hx=cx+(Math.random()-.5)*60,hy=cy+(Math.random()-.5)*60,size=6+Math.random()*10;
+      const hex=document.createElement('div');
+      hex.style.cssText=`position:fixed;pointer-events:none;z-index:9997;left:${hx-size/2}px;top:${hy-size/2}px;width:${size}px;height:${size}px;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);border:1px solid rgba(204,0,0,.2);animation:hexF 1s ease-out forwards`;
+      document.body.appendChild(hex);
+      setTimeout(()=>hex.remove(),1000);
+    }
+    requestAnimationFrame(animT);
+  }
+  const hstyle=document.createElement('style');
+  hstyle.textContent='@keyframes hexF{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.5)}}';
+  document.head.appendChild(hstyle);
+  animT();
+})();
+
+// ===== TOASTS =====
+function showToast(msg,type='info'){
+  const container=document.getElementById('toast-container');
+  const t=document.createElement('div');t.className='toast '+type;
+  const icons={success:'&#10003;',error:'&#10007;',info:'&#8505;'};
+  t.innerHTML='<span class="toast-icon">'+icons[type]+'</span><span class="toast-msg">'+msg+'</span>';
+  container.appendChild(t);
+  setTimeout(()=>t.remove(),4000);
+}
+
+// ===== LOADING =====
+setTimeout(()=>{document.getElementById('loading').classList.add('hide');updateNavDiscord()},2500);
+if(state._pendingCode)setTimeout(startVerifyPoll,3000);
+
+// ===== NAVBAR SCROLL =====
+window.addEventListener('scroll',()=>{
+  document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>20);
+});
+
+// ===== MOBILE MENU =====
+function toggleMobile(){
+  document.getElementById('nav-mobile').classList.toggle('open');
+}
+
+// ===== SVG ICONS =====
+function iconShield(){return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'}
+function iconCheck(){return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'}
+function iconLock(){return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'}
+function iconMessage(){return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>'}
+function iconSend(){return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>'}
+function iconSearch(){return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'}
+function iconClock(){return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'}
+function iconFile(){return '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'}
+function iconLockBig(){return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'}
+function iconTrash(){return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>'}
+function iconDownload(){return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'}
+function iconLogout(){return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>'}
+
+// ===== TICKETS PAGE (TABS) =====
+const TABS=[
+  {id:'player-id',label:'Player ID'},
+  {id:'discord',label:'Discord'},
+  {id:'submit',label:'Submit Ticket'},
+];
+let activeTab='player-id';
+
+function renderTabs(){
+  const bar=document.getElementById('tab-bar');
+  bar.innerHTML=TABS.map(t=>{
+    const active=activeTab===t.id;
+    return '<button class="tab-btn '+(active?'active':'')+'" onclick="switchTab(\''+t.id+'\')">'
+      +(active?'<div class="tab-indicator"></div>':'')+'<span class="tab-label">'+t.label+'</span></button>';
+  }).join('');
+  renderTabContent(activeTab);
+}
+
+function switchTab(id){
+  activeTab=id;
+  renderTabs();
+}
+
+function renderTabContent(id){
+  const container=document.getElementById('tab-content');
+  const renderers={'player-id':renderPlayerID,'discord':renderDiscord,'submit':renderSubmitTicket};
+  container.innerHTML=(renderers[id]||renderers['player-id'])();
+}
+
+// ===== PLAYER ID =====
+function renderPlayerID(){
+  if(state.playerId && state.deviceLinked){
+    return '<div class="card" style="opacity:0;animation:tabFade .3s ease forwards">'
+      +'<div class="card-header"><div class="card-icon">'+iconCheck()+'</div><div><div class="card-title">Player ID Verified</div><div class="card-desc">Permanently linked to this device</div></div></div>'
+      +'<div style="padding:16px;border-radius:12px;background:rgba(204,0,0,.05);border:1px solid rgba(204,0,0,.1)"><div class="text-xs" style="margin-bottom:4px">Linked Player ID</div><div style="font-size:20px;font-weight:700;color:var(--green);letter-spacing:2px">'+state.playerId+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-top:16px;font-size:11px;color:#888">'+iconLock()+' Cannot be changed unless reset by an administrator</div>'
+      +'<button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="requestPIDReset()">Request Reset</button></div>';
+  }
+  return '<div class="card" style="opacity:0;animation:tabFade .3s ease forwards">'
+    +'<div class="card-header"><div class="card-icon">'+iconShield()+'</div><div><div class="card-title">Verify Player ID</div><div class="card-desc">Numbers only. Once confirmed, your Player ID is permanently linked to this device.</div></div></div>'
+    +'<div style="display:flex;flex-direction:column;gap:12px;margin-top:24px">'
+    +'<input type="text" id="pid-input" placeholder="Player ID" maxlength="20" oninput="this.value=this.value.replace(/\\D/g,\'\')" />'
+    +'<button class="btn btn-primary" onclick="bindPlayerID()">Bind Player ID</button></div></div>';
+}
+
+function bindPlayerID(){
+  const inp=document.getElementById('pid-input');
+  if(!inp||!inp.value.trim())return;
+  state.playerId=inp.value.trim();state.deviceLinked=true;saveState();
+  renderTabContent('player-id');
+  showToast('Player ID successfully bound to this device!','success');
+}
+
+function requestPIDReset(){
+  if(!state.playerId){showToast('No Player ID linked','error');return}
+  const now=new Date();
+  const tn='SLA-'+(now.getTime()).toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+  state.tickets.unshift({
+    id:crypto.randomUUID(),ticketNumber:tn,playerId:state.playerId,
+    discordUsername:state.discordUsername||'N/A',
+    item:'RESET_PID',messageLink:'N/A',serverInvite:'N/A',
+    status:'pending',notes:'',createdAt:now.toISOString(),
+    resetRequest:true,oldPid:state.playerId
+  });
+  saveState();
+  syncTickets();
+  showToast('Reset request submitted! Admin will review it.','success');
+}
+
+// ===== DISCORD (Bot Verification) =====
+let verifyPollTimer = null;
+
+function renderDiscord(){
+  if(state.discordUsername){
+    return '<div class="card" style="opacity:0;animation:tabFade .3s ease forwards">'
+      +'<div class="card-header"><div class="card-icon">'+iconCheck()+'</div><div><div class="card-title">Discord Verified</div><div class="card-desc">Account linked via SLA Bot</div></div></div>'
+      +'<div style="padding:16px;border-radius:12px;background:rgba(204,0,0,.05);border:1px solid rgba(204,0,0,.1)"><div class="text-xs" style="margin-bottom:4px">Linked Discord</div><div style="font-size:20px;font-weight:700;color:var(--green);letter-spacing:2px">'+state.discordUsername+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-top:16px;font-size:11px;color:#888">'+iconLock()+' Cannot be changed unless reset by an administrator</div></div>';
+  }
+  if(state._pendingCode){
+    return '<div class="card" style="opacity:0;animation:tabFade .3s ease forwards">'
+      +'<div class="card-header"><div class="card-icon">'+iconClock()+'</div><div><div class="card-title">Waiting for Verification</div><div class="card-desc">Send the command below to the SLA Bot on Discord</div></div></div>'
+      +'<div style="padding:20px;border-radius:12px;background:rgba(204,0,0,.05);border:1px solid rgba(204,0,0,.2);text-align:center;margin-top:24px">'
+      +'<div style="font-size:11px;color:#888;margin-bottom:8px">Send this to the SLA Bot on Discord:</div>'
+      +'<div style="background:#111;border:1px solid #222;border-radius:8px;padding:12px 16px;display:inline-block;user-select:all">'
+      +'<span style="font-size:18px;font-weight:700;color:var(--green);letter-spacing:2px;font-family:monospace">/verify '+state._pendingCode+'</span></div>'
+      +'<div style="display:flex;align-items:center;gap:6px;justify-content:center;margin-top:16px;font-size:12px;color:#888">'
+      +'<span class="spinner"></span> Waiting for confirmation...</div></div></div>';
+  }
+  return '<div class="card" style="opacity:0;animation:tabFade .3s ease forwards">'
+    +'<div class="card-header"><div class="card-icon">'+iconMessage()+'</div><div><div class="card-title">Verify Discord via Bot</div><div class="card-desc">Link your Discord account using the SLA Bot.</div></div></div>'
+    +'<div style="display:flex;flex-direction:column;gap:12px;margin-top:24px">'
+    +'<input type="text" id="discord-input" placeholder="@username" oninput="document.getElementById(\'discord-btn\').disabled=!this.value.startsWith(\'@\')" />'
+    +'<p style="font-size:11px;color:#888">Must match your Discord username (e.g. @Player123)</p>'
+    +'<button class="btn btn-primary" onclick="startDiscordVerify()" id="discord-btn" disabled>Generate Code</button></div></div>';
+}
+
+function startDiscordVerify(){
+  const inp=document.getElementById('discord-input');
+  if(!inp||!inp.value.trim()||!inp.value.startsWith('@')){showToast('Discord username must begin with @','error');return}
+  const username=inp.value.trim();
+  showToast('Generating verification code...','info');
+  apiPost('/verify/generate', { discordUsername: username }).then(res => {
+    if (!res || !res.code) { showToast('Could not reach verification server. Is the bot running?','error'); return; }
+    state._pendingCode = res.code;
+    state._pendingUsername = username;
+    saveState();
+    renderTabContent('discord');
+    startVerifyPoll();
+  });
+}
+
+function startVerifyPoll(){
+  if (verifyPollTimer) clearInterval(verifyPollTimer);
+  verifyPollTimer = setInterval(() => {
+    if (!state._pendingCode) { clearInterval(verifyPollTimer); verifyPollTimer = null; return; }
+    apiGet('/verify/check/' + state._pendingCode).then(res => {
+      if (res && res.verified) {
+        clearInterval(verifyPollTimer); verifyPollTimer = null;
+        state.discordUsername = state._pendingUsername;
+        state._pendingCode = null;
+        state._pendingUsername = null;
+        saveState();
+        updateNavDiscord();
+        renderTabContent('discord');
+        showToast('Discord account successfully verified!','success');
+      }
+    });
+  }, 3000);
+}
+
+// ===== SUBMIT TICKET =====
+function renderSubmitTicket(){
+  return '<div class="card" style="opacity:0;animation:tabFade .3s ease forwards">'
+    +'<div class="card-title" style="margin-bottom:24px">Submit a Ticket</div>'
+    +'<div class="grid-2" style="margin-bottom:24px">'
+    +'<div style="padding:16px;border-radius:12px;background:rgba(204,0,0,.05);border:1px solid rgba(204,0,0,.1)"><div class="text-xs" style="margin-bottom:4px">Player ID</div><div class="text-green" style="font-size:14px;font-weight:500">'+(state.playerId||'<span style="color:#555">Not set</span>')+'</div></div>'
+    +'<div style="padding:16px;border-radius:12px;background:rgba(204,0,0,.05);border:1px solid rgba(204,0,0,.1)"><div class="text-xs" style="margin-bottom:4px">Discord</div><div class="text-green" style="font-size:14px;font-weight:500">'+(state.discordUsername||'<span style="color:#555">Not set</span>')+'</div></div></div>'
+    +'<div style="display:flex;flex-direction:column;gap:16px">'
+    +'<div><label class="text-xs" style="display:block;margin-bottom:6px;color:#888">Select Item</label>'
+    +'<input type="text" id="ticket-item" placeholder="e.g. KW9" oninput="validateTicket()" /></div>'
+    +'<div><label class="text-xs" style="display:block;margin-bottom:6px;color:#888">Message Link</label>'
+    +'<input type="text" id="ticket-link" placeholder="https://discord.com/channels/..." /></div>'
+    +'<div><label class="text-xs" style="display:block;margin-bottom:6px;color:#888">Server Invite</label>'
+    +'<input type="text" id="ticket-invite" placeholder="https://" oninput="validateTicket()"/></div></div>'
+    +'<button class="btn btn-gradient btn-full" style="margin-top:24px" onclick="openTicketConfirm()" id="submit-btn" disabled>'+iconSend()+' Submit Ticket</button></div>';
+}
+
+function validateTicket(){
+  const item=document.getElementById('ticket-item').value;
+  const invite=document.getElementById('ticket-invite').value;
+  document.getElementById('submit-btn').disabled=!item.trim()||!invite.startsWith('https://');
+}
+
+function openTicketConfirm(){
+  const item=document.getElementById('ticket-item').value;
+  const link=document.getElementById('ticket-link').value;
+  const invite=document.getElementById('ticket-invite').value;
+  if(!item||!link||!invite){showToast('Please fill in all fields','error');return}
+  if(!invite.startsWith('https://')){showToast('Invite link must start with https://','error');return}
+  const modal=document.getElementById('modal');
+  document.getElementById('modal-body').innerHTML='<div class="modal-title">Confirm Ticket</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px;font-size:14px;margin-bottom:24px">'
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Item:</span><span style="color:#fff">'+item+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Player ID:</span><span class="text-green">'+state.playerId+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Discord:</span><span class="text-green">'+state.discordUsername+'</span></div></div>'
+    +'<div style="display:flex;gap:12px;justify-content:flex-end">'
+    +'<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>'
+    +'<button class="btn btn-primary" onclick="submitTicket()">Confirm & Submit</button></div>';
+  modal.classList.add('open');
+  window._ticketData={item,link,invite};
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+
+function submitTicket(){
+  closeModal();
+  const d=window._ticketData;
+  const now=new Date();
+  const tn='SLA-'+(now.getTime()).toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+  state.tickets.unshift({id:crypto.randomUUID(),ticketNumber:tn,playerId:state.playerId,discordUsername:state.discordUsername,item:d.item,messageLink:d.link,serverInvite:d.invite,status:'pending',notes:'',createdAt:now.toISOString()});
+  saveState();
+  syncTickets();
+  renderTabContent('submit');
+  showToast('Ticket '+tn+' submitted successfully!','success');
+}
+
+// ===== MY TICKETS PAGE =====
+let ticketFilter='all';
+
+function renderMyTicketsPage(){
+  const container=document.getElementById('my-tickets-content');
+  container.innerHTML='<div style="opacity:0;animation:tabFade .3s ease forwards">'
+    +'<div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">'
+    +'<div style="position:relative;max-width:384px"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%)">'+iconSearch()+'</span>'
+    +'<input type="text" id="ticket-search" placeholder="Search tickets..." style="padding-left:40px" oninput="renderFilteredTickets()" /></div>'
+    +'<div class="filter-bar">'
+    +['all','pending','accepted','denied','in-review'].map(s=>'<button class="filter-btn '+(s==='all'?'active':'')+'" onclick="setTicketFilter(\''+s+'\')" id="fltr-'+s+'">'+s.charAt(0).toUpperCase()+s.slice(1).replace('-',' ')+'</button>').join('')
+    +'</div></div><div id="ticket-list"></div></div>';
+  renderFilteredTickets();
+}
+
+function setTicketFilter(f){
+  ticketFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('fltr-'+f).classList.add('active');
+  renderFilteredTickets();
+}
+
+function renderFilteredTickets(){
+  const q=(document.getElementById('ticket-search')?.value||'').toLowerCase();
+  const filtered=state.tickets.filter(t=>{
+    if(ticketFilter!=='all'&&t.status!==ticketFilter)return false;
+    if(q)return t.ticketNumber.toLowerCase().includes(q)||t.item.toLowerCase().includes(q)||t.playerId.includes(q);
+    return true;
+  });
+  const list=document.getElementById('ticket-list');
+  if(!filtered.length){
+    list.innerHTML='<div style="text-align:center;padding:64px 0"><div>'+iconFile()+'</div><p style="color:#888;font-size:14px;margin-top:12px">No tickets found</p></div>';
+    return;
+  }
+  list.innerHTML=filtered.map(t=>{
+    const m={pending:['Pending','badge-pending',iconClock()],accepted:['Accepted','badge-accepted',iconCheck()],denied:['Denied','badge-denied','&#10007;'],'in-review':['In Review','badge-review','&#10263;']};
+    const[s,cls,ic]=m[t.status]||['Pending','badge-pending',''];
+    return '<div class="ticket-card" style="margin-bottom:12px">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+      +'<span class="text-xs text-mono" style="color:#888">'+t.ticketNumber+'</span>'
+      +'<span class="badge '+cls+'">'+ic+' '+s+'</span></div>'
+      +'<p style="font-size:14px;font-weight:500;color:#fff;margin-bottom:4px">'+t.item+'</p>'
+      +'<p class="ticket-info">'+new Date(t.createdAt).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</p>'
+      +(t.reviewNotes?'<p style="font-size:12px;color:#888;margin-top:8px;font-style:italic">Note: '+t.reviewNotes+'</p>':'')
+      +'</div></div></div>';
+  }).join('');
+}
+
+// ===== ADMIN PAGE =====
+let adminFilter='all';
+
+function renderAdminPage(){
+  const container=document.getElementById('admin-content');
+  if(!state.isAdmin){
+    container.innerHTML='<div style="max-width:384px;margin:0 auto;opacity:0;animation:tabFade .3s ease forwards">'
+      +'<div class="card"><div class="card-header"><div class="card-icon">'+iconLockBig()+'</div><div><div class="card-title">Admin Access</div><div class="card-desc">Enter the admin password to continue</div></div></div>'
+      +'<input type="password" id="admin-pass" placeholder="Enter Admin Password" style="margin-top:24px" onkeydown="if(event.key===\'Enter\')adminLogin()" />'
+      +'<button class="btn btn-primary btn-full" style="margin-top:12px" onclick="adminLogin()">Unlock Panel</button></div></div>';
+    return;
+  }
+  const counts={pending:0,accepted:0,denied:0,'in-review':0};
+  state.tickets.forEach(t=>{if(counts[t.status]!==undefined)counts[t.status]++});
+  container.innerHTML='<div style="opacity:0;animation:tabFade .3s ease forwards">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">'
+    +'<div class="card-title">Admin Dashboard</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button class="btn btn-ghost btn-sm" onclick="exportTickets()">'+iconDownload()+' Export</button>'
+    +'<button class="btn btn-danger btn-sm" onclick="adminLogout()">'+iconLogout()+' Logout</button></div></div>'
+    +'<div class="grid-4">'
+    +Object.entries(counts).map(([k,v])=>{
+      const labels={pending:'Pending',accepted:'Accepted',denied:'Denied','in-review':'In Review'};
+      return '<button class="stat-card'+(adminFilter===k?' active':'')+'" onclick="setAdminFilter(\''+k+'\')"><h3>'+v+'</h3><p>'+(labels[k]||k)+'</p></button>';
+    }).join('')
+    +'</div>'
+    +'<div style="display:flex;gap:12px;margin:16px 0;flex-wrap:wrap">'
+    +'<div style="position:relative;flex:1;min-width:200px"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%)">'+iconSearch()+'</span>'
+    +'<input type="text" id="admin-search" placeholder="Search Player ID or Discord..." style="padding-left:40px" oninput="renderAdminTickets()" /></div>'
+    +'<button class="btn btn-ghost btn-sm" onclick="adminFilter=\'all\';renderAdminTickets();document.querySelectorAll(\'.stat-card\').forEach(c=>c.classList.remove(\'active\'))">Clear Filter</button></div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">'
+    +'<button class="btn btn-ghost btn-sm" onclick="adminResetPID()">Reset Player ID</button>'
+    +'<button class="btn btn-ghost btn-sm" onclick="adminResetDiscord()">Reset Discord</button></div>'
+    +'<div id="admin-ticket-list"></div></div>';
+  renderAdminTickets();
+}
+
+function setAdminFilter(f){
+  adminFilter=f;
+  document.querySelectorAll('.stat-card').forEach(c=>c.classList.remove('active'));
+  const cards=document.querySelectorAll('.stat-card');
+  const idx={pending:0,accepted:1,denied:2,'in-review':3};
+  if(cards[idx[f]])cards[idx[f]].classList.add('active');
+  renderAdminTickets();
+}
+
+function adminLogin(){
+  const pass=document.getElementById('admin-pass')?.value;
+  if(!pass){showToast('Enter admin password','error');return}
+  apiPost('/admin/login', { password: pass }).then(res => {
+    if(res && res.success){state.isAdmin=true;saveState();renderAdminPage();showToast('Admin access granted','success')}
+    else showToast('Invalid admin password','error');
+  });
+}
+
+function adminLogout(){state.isAdmin=false;saveState();renderAdminPage();showToast('Logged out of admin panel','info')}
+
+function renderAdminTickets(){
+  const q=(document.getElementById('admin-search')?.value||'').toLowerCase();
+  const filtered=state.tickets.filter(t=>{
+    if(adminFilter!=='all'&&t.status!==adminFilter)return false;
+    if(q)return t.ticketNumber.toLowerCase().includes(q)||t.playerId.includes(q)||t.discordUsername.toLowerCase().includes(q);
+    return true;
+  });
+  const list=document.getElementById('admin-ticket-list');
+  if(!filtered.length){list.innerHTML='<div style="text-align:center;padding:32px 0;color:#888;font-size:14px">No tickets match your criteria</div>';return}
+  list.innerHTML=filtered.map(t=>{
+    const m={pending:'Pending',accepted:'Accepted',denied:'Denied','in-review':'In Review'};
+    const label = t.resetRequest ? 'Reset Request' : (t.item || m[t.status] || t.status);
+    return '<div class="ticket-card" style="margin-bottom:8px;cursor:pointer" onclick="openAdminTicket(\''+t.ticketNumber+'\')">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:16px">'
+      +'<div style="flex:1;min-width:0">'
+      +'<span class="text-xs text-mono" style="color:#888">'+t.ticketNumber+'</span>'
+      +'<p style="font-size:14px;color:#fff;margin-top:2px">'+label+'</p>'
+      +'<p class="ticket-info">'+t.playerId+' &middot; '+t.discordUsername+'</p></div>'
+      +'<span class="badge badge-'+t.status+'">'+(m[t.status]||t.status)+'</span></div></div>';
+  }).join('');
+}
+
+function openAdminTicket(tn){
+  const t=state.tickets.find(x=>x.ticketNumber===tn);
+  if(!t)return;
+  const m={pending:['Pending','badge-pending'],accepted:['Accepted','badge-accepted'],denied:['Denied','badge-denied'],'in-review':['In Review','badge-review']};
+  const[s,cls]=m[t.status]||['Pending','badge-pending'];
+  const isReset=t.resetRequest;
+  const modal=document.getElementById('modal');
+  document.getElementById('modal-body').innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+    +'<div class="modal-title" style="margin:0">'+(isReset?'Reset Request: ':'')+t.ticketNumber+'</div>'
+    +'<button class="btn btn-danger btn-sm" onclick="adminDeleteTicket(\''+tn+'\')">'+iconTrash()+' Delete</button></div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px;font-size:14px;margin-bottom:16px">'
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Player ID</span><span class="text-mono" style="color:#fff">'+t.playerId+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Discord</span><span style="color:#fff">'+t.discordUsername+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Item</span><span style="color:#fff">'+(isReset?'Reset PID Request':t.item)+'</span></div>'
+    +(isReset?'<div style="display:flex;justify-content:space-between"><span style="color:#888">Old PID</span><span class="text-mono" style="color:#fff">'+t.oldPid+'</span></div>':'')
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Date</span><span style="color:#fff">'+new Date(t.createdAt).toLocaleDateString()+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Status</span><span style="color:#fff;text-transform:capitalize">'+t.status+'</span></div>'
+    +(!isReset?'<div><span style="color:#888;display:block;margin-bottom:4px">Message Link</span><span class="text-green text-sm break-all">'+t.messageLink+'</span></div>':'')
+    +(!isReset?'<div><span style="color:#888;display:block;margin-bottom:4px">Server Invite</span><span class="text-green text-sm break-all">'+t.serverInvite+'</span></div>':'')+'</div>'
+    +'<div style="margin-bottom:16px"><label class="text-xs" style="display:block;margin-bottom:6px;color:#888">Review Notes</label>'
+    +'<textarea id="admin-notes" rows="3" style="resize:none">'+(t.reviewNotes||'')+'</textarea></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<button class="btn btn-primary btn-sm" onclick="adminUpdateTicket(\''+tn+'\',\'accepted\')"><span style="display:flex;align-items:center;gap:4px">'+iconCheck()+' Approve'+(isReset?' & Reset PID':'')+'</span></button>'
+    +'<button class="btn btn-danger btn-sm" onclick="openRejectReason(\''+tn+'\')"><span style="display:flex;align-items:center;gap:4px">&#10007; Deny</span></button>'
+    +'<button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button></div>';
+  modal.classList.add('open');
+}
+
+function openRejectReason(tn){
+  closeModal();
+  const modal=document.getElementById('modal');
+  document.getElementById('modal-body').innerHTML='<div class="modal-title" style="margin-bottom:8px">Reject Ticket</div>'
+    +'<p style="font-size:13px;color:#888;margin-bottom:20px">A rejection reason is required. This will be sent to the user via Discord.</p>'
+    +'<textarea id="reject-reason" rows="4" placeholder="Enter the reason for rejection..." style="resize:none;margin-bottom:16px"></textarea>'
+    +'<div style="display:flex;gap:12px;justify-content:flex-end">'
+    +'<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>'
+    +'<button class="btn btn-danger" onclick="confirmReject(\''+tn+'\')" id="reject-confirm-btn" disabled>Confirm Reject</button></div>';
+  modal.classList.add('open');
+  setTimeout(() => {
+    const ta = document.getElementById('reject-reason');
+    if (ta) ta.oninput = function() {
+      document.getElementById('reject-confirm-btn').disabled = !this.value.trim();
+    };
+    if (ta) ta.focus();
+  }, 100);
+}
+
+function confirmReject(tn){
+  const reason = document.getElementById('reject-reason')?.value?.trim();
+  if (!reason) { showToast('Rejection reason is required','error'); return; }
+  adminUpdateTicket(tn, 'denied', reason);
+}
+
+let syncFailed = false;
+
+function syncTickets(){
+  apiPost('/tickets/sync', { tickets: state.tickets }).then(res => {
+    syncFailed = !res;
+    if (!res) setTimeout(syncTickets, 10000);
+  });
+}
+
+// Retry sync on page load if backend was down
+setTimeout(() => { if (state.tickets.length) syncTickets(); }, 5000);
+
+function adminUpdateTicket(tn,status,rejectReason){
+  const notes=document.getElementById('admin-notes')?.value||'';
+  const t=state.tickets.find(x=>x.ticketNumber===tn);
+  if(!t)return;
+  t.status=status;
+  const reason = rejectReason || notes || '';
+  if(reason)t.reviewNotes=reason;
+  // Auto-reset PID when a reset request is accepted
+  if(t.resetRequest && status==='accepted' && t.oldPid && state.playerId===t.oldPid){
+    state.playerId=null;state.deviceLinked=false;
+  }
+  saveState();closeModal();renderAdminTickets();
+  syncTickets();
+  showToast('Ticket '+tn+' updated to '+status,'info');
+  // Notify user via Discord bot
+  if (t.discordUsername) {
+    apiPost('/tickets/notify', {
+      discordUsername: t.discordUsername,
+      ticketNumber: tn,
+      status: status,
+      reason: reason || undefined
+    }).then(res => {
+      if (res && res.sent) showToast('User notified via Discord','success');
+      else if (res && res.error) showToast('Discord DM: ' + res.error, 'info');
+    });
+  }
+}
+
+function adminDeleteTicket(tn){
+  if(!confirm('Delete ticket '+tn+'?'))return;
+  state.tickets=state.tickets.filter(t=>t.ticketNumber!==tn);
+  saveState();closeModal();renderAdminTickets();
+  showToast('Ticket '+tn+' deleted','info');
+}
+
+function adminResetPID(){state.playerId=null;state.deviceLinked=false;saveState();showToast('Player ID binding reset','info')}
+function adminResetDiscord(){state.discordUsername=null;saveState();updateNavDiscord();showToast('Discord binding reset','info')}
+
+function exportTickets(){
+  const blob=new Blob([JSON.stringify(state.tickets,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='sla-tickets-'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();URL.revokeObjectURL(a.href);
+  showToast('Tickets exported','success');
+}
+</script>
+
+</body>
+</html>

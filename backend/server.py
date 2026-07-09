@@ -11,10 +11,13 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 
+from functools import wraps
+
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 PORT = int(os.getenv("PORT", 3001))
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "SLA@dm1n#P4$$w0rd!2026$X9kLmZq3Rt7vWbYnCfJ")
+API_SECRET = os.getenv("API_SECRET", "")
 GUILD_IDS = [1518701700586934342, 1516537211087224843]
 DATA_FILE = Path(__file__).parent / "data.json"
 
@@ -31,6 +34,14 @@ def save_data(data):
     DATA_FILE.write_text(json.dumps(data, indent=2))
 
 data = load_data()
+
+def require_secret(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if API_SECRET and request.headers.get("X-API-Secret") != API_SECRET:
+            return jsonify({"error": "Unauthorized"}), 401
+        return f(*args, **kwargs)
+    return wrapper
 
 # ===== Flask app =====
 app = Flask(__name__)
@@ -65,6 +76,7 @@ def check_code(code):
     return jsonify({"verified": False})
 
 @app.route("/api/tickets/notify", methods=["POST"])
+@require_secret
 def notify_ticket():
     body = request.get_json(silent=True) or {}
     discord_username = body.get("discordUsername")
@@ -88,6 +100,7 @@ def notify_ticket():
     return jsonify({"sent": True})
 
 @app.route("/api/tickets/sync", methods=["POST"])
+@require_secret
 def sync_tickets():
     body = request.get_json(silent=True) or {}
     tickets = body.get("tickets", [])
@@ -109,6 +122,7 @@ def get_tickets():
     return jsonify({"tickets": tickets, "count": len(tickets)})
 
 @app.route("/api/unlink", methods=["POST"])
+@require_secret
 def unlink():
     body = request.get_json(silent=True) or {}
     user_id = body.get("userId")
