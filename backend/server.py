@@ -222,10 +222,22 @@ class SLABot(discord.Client):
                 if v["verified"]:
                     await safe_send(interaction, "This code has already been used.")
                     return
+                expected = v["discordUsername"].lstrip("@")
+                if interaction.user.name.lower() != expected.lower():
+                    await safe_send(interaction,
+                        f"This code was generated for **{v['discordUsername']}**, "
+                        f"but your Discord username is **@{interaction.user.name}**. "
+                        f"Enter the correct @username on the website and generate a new code."
+                    )
+                    return
                 v["verified"] = True
                 v["userId"] = str(interaction.user.id)
+                uid = str(interaction.user.id)
+                for old_key in list(data["discord_links"].keys()):
+                    if data["discord_links"][old_key]["userId"] == uid:
+                        del data["discord_links"][old_key]
                 data["discord_links"][v["discordUsername"].lower()] = {
-                    "userId": str(interaction.user.id),
+                    "userId": uid,
                     "discordUsername": v["discordUsername"]
                 }
                 save_data(data)

@@ -655,7 +655,8 @@ function renderDiscord(){
     return '<div class="card" style="opacity:0;animation:tabFade .3s ease forwards">'
       +'<div class="card-header"><div class="card-icon">'+iconCheck()+'</div><div><div class="card-title">Discord Verified</div><div class="card-desc">Account linked via SLA Bot</div></div></div>'
       +'<div style="padding:16px;border-radius:12px;background:rgba(204,0,0,.05);border:1px solid rgba(204,0,0,.1)"><div class="text-xs" style="margin-bottom:4px">Linked Discord</div><div style="font-size:20px;font-weight:700;color:var(--green);letter-spacing:2px">'+state.discordUsername+'</div></div>'
-      +'<div style="display:flex;align-items:center;gap:6px;margin-top:16px;font-size:11px;color:#888">'+iconLock()+' Cannot be changed unless reset by an administrator</div></div>';
+      +'<div style="display:flex;align-items:center;gap:6px;margin-top:16px;font-size:11px;color:#888">'+iconLock()+' Cannot be changed unless reset by an administrator</div>'
+      +'<button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="startDiscordChange()">Change Discord</button></div>';
   }
   if(state._pendingCode){
     return '<div class="card" style="opacity:0;animation:tabFade .3s ease forwards">'
@@ -671,7 +672,7 @@ function renderDiscord(){
     +'<div class="card-header"><div class="card-icon">'+iconMessage()+'</div><div><div class="card-title">Verify Discord via Bot</div><div class="card-desc">Link your Discord account using the SLA Bot.</div></div></div>'
     +'<div style="display:flex;flex-direction:column;gap:12px;margin-top:24px">'
     +'<input type="text" id="discord-input" placeholder="@username" oninput="document.getElementById(\'discord-btn\').disabled=!this.value.startsWith(\'@\')" />'
-    +'<p style="font-size:11px;color:#888">Must match your Discord username (e.g. @Player123)</p>'
+    +'<p style="font-size:11px;color:#888">Must match your Discord account name exactly (e.g. @Player123). The bot will reject mismatches.</p>'
     +'<button class="btn btn-primary" onclick="startDiscordVerify()" id="discord-btn" disabled>Generate Code</button></div></div>';
 }
 
@@ -687,6 +688,21 @@ function startDiscordVerify(){
     saveState();
     renderTabContent('discord');
     startVerifyPoll();
+  });
+}
+
+function startDiscordChange(){
+  if(!state.discordUsername){return}
+  if(!confirm('Start a Discord change request? Your current link will be removed.')){return}
+  apiPost('/unlink', { discordUsername: state.discordUsername }).then(() => {
+    state.discordUsername = null;
+    state._pendingCode = null;
+    state._pendingUsername = null;
+    if(verifyPollTimer){clearInterval(verifyPollTimer);verifyPollTimer=null}
+    saveState();
+    updateNavDiscord();
+    renderTabContent('discord');
+    showToast('Discord unlinked. You can now verify with a new account.','info');
   });
 }
 
