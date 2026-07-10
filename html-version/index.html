@@ -720,6 +720,13 @@ function startVerifyPoll(){
         updateNavDiscord();
         renderTabContent('discord');
         showToast('Discord account successfully verified!','success');
+      } else if (res && res.invalidated) {
+        clearInterval(verifyPollTimer); verifyPollTimer = null;
+        state._pendingCode = null;
+        state._pendingUsername = null;
+        saveState();
+        renderTabContent('discord');
+        showToast('Code was rejected — Discord username didn\'t match. Try again.','error');
       }
     });
   }, 3000);

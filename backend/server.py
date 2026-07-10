@@ -90,7 +90,7 @@ def generate_code():
 def check_code(code):
     v = data["verifications"].get(code.upper())
     if not v:
-        return jsonify({"verified": False})
+        return jsonify({"verified": False, "invalidated": True})
     if v["verified"]:
         return jsonify({"verified": True, "discordUsername": v["discordUsername"], "userId": v["userId"]})
     return jsonify({"verified": False})
@@ -224,10 +224,11 @@ class SLABot(discord.Client):
                     return
                 expected = v["discordUsername"].lstrip("@")
                 if interaction.user.name.lower() != expected.lower():
+                    del data["verifications"][code]
+                    save_data(data)
                     await safe_send(interaction,
-                        f"This code was generated for **{v['discordUsername']}**, "
-                        f"but your Discord username is **@{interaction.user.name}**. "
-                        f"Enter the correct @username on the website and generate a new code."
+                        f"This code was for **{v['discordUsername']}**, not @{interaction.user.name}. "
+                        f"Code invalidated. Generate a new one on the website with your correct @username."
                     )
                     return
                 v["verified"] = True
