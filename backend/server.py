@@ -44,8 +44,28 @@ def require_secret(f):
     return wrapper
 
 # ===== Flask app =====
-app = Flask(__name__)
+app = Flask(__name__, static_folder="../html-version", static_url_path="")
 CORS(app)
+
+@app.route("/")
+def serve_index():
+    return app.send_static_file("index.html")
+
+@app.route("/<path:path>")
+def serve_static(path):
+    from werkzeug.utils import safe_join
+    import os
+    # Skip API routes
+    if path.startswith("api/"):
+        from flask import abort
+        return abort(404)
+    # Try to serve the file from html-version
+    static_dir = app.static_folder
+    filepath = safe_join(static_dir, path)
+    if os.path.isfile(filepath):
+        return app.send_static_file(path)
+    # Fallback to index.html (SPA behavior)
+    return app.send_static_file("index.html")
 
 @app.route("/api/verify/generate", methods=["POST"])
 def generate_code():
