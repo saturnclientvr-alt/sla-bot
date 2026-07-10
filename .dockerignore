@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.gitignore
+*.md
+AGENTS.md
+CLAUDE.md
+src/
+public/
+*.json
+tsconfig.json
+next-env.d.ts
+*.config.*
