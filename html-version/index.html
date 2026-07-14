@@ -157,6 +157,7 @@ select{appearance:none}
 .badge-accepted{color:var(--green);border-color:rgba(204,0,0,.2);background:rgba(204,0,0,.05)}
 .badge-denied{color:#ff5050;border-color:rgba(255,80,80,.2);background:rgba(255,80,80,.05)}
 .badge-review{color:#60a5fa;border-color:rgba(96,165,250,.2);background:rgba(96,165,250,.05)}
+.badge-scamming{color:#ff8800;border-color:rgba(255,136,0,.2);background:rgba(255,136,0,.05)}
 
 .grid-2{display:grid;grid-template-columns:1fr;gap:12px}
 @media(min-width:640px){.grid-2{grid-template-columns:1fr 1fr}}
@@ -566,6 +567,8 @@ function toggleMobile(){
 
 // ===== SVG ICONS =====
 function iconShield(){return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'}
+function iconTicket(){return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 9a3 3 0 010 6v2a2 2 0 002 2h16a2 2 0 002-2v-2a3 3 0 010-6V7a2 2 0 00-2-2H4a2 2 0 00-2 2z"/><path d="M13 5v2"/><path d="M13 17v2"/></svg>'}
+function iconReset(){return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>'}
 function iconCheck(){return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'}
 function iconLock(){return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'}
 function iconMessage(){return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>'}
@@ -777,6 +780,17 @@ function openTicketConfirm(){
 function closeModal(){document.getElementById('modal').classList.remove('open')}
 
 function submitTicket(){
+  // Check blacklist first
+  apiPost('/blacklist/check', { discordUsername: state.discordUsername, playerId: state.playerId }).then(res => {
+    if (res && res.blacklisted) {
+      closeModal();
+      showToast('You are blacklisted and cannot submit tickets.','error');
+      return;
+    }
+    proceedSubmitTicket();
+  }).catch(() => proceedSubmitTicket());
+}
+function proceedSubmitTicket(){
   closeModal();
   const d=window._ticketData;
   const now=new Date();
@@ -798,7 +812,7 @@ function renderMyTicketsPage(){
     +'<div style="position:relative;max-width:384px"><span style="position:absolute;left:12px;top:50%;transform:translateY(-50%)">'+iconSearch()+'</span>'
     +'<input type="text" id="ticket-search" placeholder="Search tickets..." style="padding-left:40px" oninput="renderFilteredTickets()" /></div>'
     +'<div class="filter-bar">'
-    +['all','pending','accepted','denied','in-review'].map(s=>'<button class="filter-btn '+(s==='all'?'active':'')+'" onclick="setTicketFilter(\''+s+'\')" id="fltr-'+s+'">'+s.charAt(0).toUpperCase()+s.slice(1).replace('-',' ')+'</button>').join('')
+    +    ['all','pending','accepted','denied','in-review','scamming'].map(s=>'<button class="filter-btn '+(s==='all'?'active':'')+'" onclick="setTicketFilter(\''+s+'\')" id="fltr-'+s+'">'+s.charAt(0).toUpperCase()+s.slice(1).replace('-',' ')+'</button>').join('')
     +'</div></div><div id="ticket-list"></div></div>';
   renderFilteredTickets();
 }
@@ -823,9 +837,9 @@ function renderFilteredTickets(){
     return;
   }
   list.innerHTML=filtered.map(t=>{
-    const m={pending:['Pending','badge-pending',iconClock()],accepted:['Accepted','badge-accepted',iconCheck()],denied:['Denied','badge-denied','&#10007;'],'in-review':['In Review','badge-review','&#10263;']};
+    const m={pending:['Pending','badge-pending',iconClock()],accepted:['Accepted','badge-accepted',iconCheck()],denied:['Denied','badge-denied','&#10007;'],'in-review':['In Review','badge-review','&#10263;'],scamming:['Scamming','badge-scamming','&#9888;']};
     const[s,cls,ic]=m[t.status]||['Pending','badge-pending',''];
-    return '<div class="ticket-card" style="margin-bottom:12px">'
+    return '<div class="ticket-card" style="margin-bottom:12px;cursor:pointer" onclick="openUserTicket(\''+t.ticketNumber+'\')">'
       +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">'
       +'<div style="flex:1;min-width:0">'
       +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
@@ -838,8 +852,80 @@ function renderFilteredTickets(){
   }).join('');
 }
 
+function openUserTicket(tn){
+  const t=state.tickets.find(x=>x.ticketNumber===tn);
+  if(!t)return;
+  const m={pending:['Pending','badge-pending'],accepted:['Accepted','badge-accepted'],denied:['Denied','badge-denied'],'in-review':['In Review','badge-review'],scamming:['Scamming','badge-scamming']};
+  const[s,cls]=m[t.status]||['Pending','badge-pending'];
+  const modal=document.getElementById('modal');
+  renderUserTicketModal(t, s, cls);
+  modal.classList.add('open');
+}
+function renderUserTicketModal(t, s, cls){
+  const tn=t.ticketNumber;
+  const chatHtml=renderChatMessages(t, 'user');
+  document.getElementById('modal-body').innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+    +'<div class="modal-title" style="margin:0">'+tn+'</div>'
+    +'<button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button></div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px;font-size:14px;margin-bottom:16px">'
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Item</span><span style="color:#fff">'+t.item+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Player ID</span><span class="text-mono" style="color:#fff">'+t.playerId+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Status</span><span class="badge '+cls+'">'+s+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Date</span><span style="color:#fff">'+new Date(t.createdAt).toLocaleDateString()+'</span></div>'
+    +(t.reviewNotes?'<div style="display:flex;justify-content:space-between"><span style="color:#888">Note</span><span style="color:#ffcc00">'+t.reviewNotes+'</span></div>':'')
+    +'</div>'
+    +chatHtml
+    +'<div style="margin-top:12px;display:flex;gap:8px">'
+    +'<input type="text" id="user-chat-input" placeholder="Reply..." style="flex:1" onkeydown="if(event.key===\'Enter\')sendUserChat(\''+tn+'\')" />'
+    +'<button class="btn btn-primary btn-sm" onclick="sendUserChat(\''+tn+'\')">Send</button></div>';
+  // Refresh chat from server
+  apiPost('/tickets/chat/fetch', { ticketNumber: tn }).then(res=>{
+    if(res&&res.chat){t.chat=res.chat;renderChatInModal(tn,'user');}
+  });
+}
+function renderChatMessages(t, viewer){
+  if(!t.chat||!t.chat.length)return '<div style="margin:12px 0;color:#888;font-size:13px">No messages yet</div>';
+  return '<div style="margin:12px 0;max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:8px" id="chat-msgs">'
+    +t.chat.map(msg=>{
+      const isMe=viewer==='user'?msg.role==='user':msg.role==='admin';
+      return '<div style="display:flex;flex-direction:column;align-items:'+(isMe?'flex-end':'flex-start')+'">'
+        +'<div style="background:'+(msg.role==='admin'?'#1a3a5c':'#2a2a2a')+';padding:8px 12px;border-radius:12px;max-width:80%;font-size:13px;color:#fff">'
+        +msg.message+'</div>'
+        +'<span style="font-size:10px;color:#666;margin-top:2px">'+(msg.role==='admin'?'Staff':'You')+'</span></div>';
+    }).join('')+'</div>';
+}
+function renderChatInModal(tn, viewer){
+  const t=state.tickets.find(x=>x.ticketNumber===tn);
+  if(!t)return;
+  const el=document.getElementById('chat-msgs');
+  if(el&&t.chat){
+    el.innerHTML=t.chat.map(msg=>{
+      const isMe=viewer==='user'?msg.role==='user':msg.role==='admin';
+      return '<div style="display:flex;flex-direction:column;align-items:'+(isMe?'flex-end':'flex-start')+'">'
+        +'<div style="background:'+(msg.role==='admin'?'#1a3a5c':'#2a2a2a')+';padding:8px 12px;border-radius:12px;max-width:80%;font-size:13px;color:#fff">'
+        +msg.message+'</div>'
+        +'<span style="font-size:10px;color:#666;margin-top:2px">'+(msg.role==='admin'?'Staff':'You')+'</span></div>';
+    }).join('');
+    el.scrollTop=el.scrollHeight;
+  }
+}
+function sendUserChat(tn){
+  const input=document.getElementById('user-chat-input');
+  const msg=input?.value?.trim();
+  if(!msg)return;
+  const t=state.tickets.find(x=>x.ticketNumber===tn);
+  if(!t)return;
+  if(!t.chat)t.chat=[];
+  t.chat.push({role:'user',message:msg,timestamp:Date.now()/1000});
+  input.value='';
+  renderChatInModal(tn,'user');
+  apiPost('/tickets/chat/send',{ticketNumber:tn,role:'user',message:msg});
+}
+
 // ===== ADMIN PAGE =====
 let adminFilter='all';
+
+let adminTab='tickets';
 
 function renderAdminPage(){
   const container=document.getElementById('admin-content');
@@ -850,17 +936,38 @@ function renderAdminPage(){
       +'<button class="btn btn-primary btn-full" style="margin-top:12px" onclick="adminLogin()">Unlock Panel</button></div></div>';
     return;
   }
-  const counts={pending:0,accepted:0,denied:0,'in-review':0};
-  state.tickets.forEach(t=>{if(counts[t.status]!==undefined)counts[t.status]++});
   container.innerHTML='<div style="opacity:0;animation:tabFade .3s ease forwards">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">'
     +'<div class="card-title">Admin Dashboard</div>'
     +'<div style="display:flex;gap:8px">'
     +'<button class="btn btn-ghost btn-sm" onclick="exportTickets()">'+iconDownload()+' Export</button>'
     +'<button class="btn btn-danger btn-sm" onclick="adminLogout()">'+iconLogout()+' Logout</button></div></div>'
-    +'<div class="grid-4">'
+    +'<div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid #222;padding-bottom:8px">'
+    +'<button class="btn btn-sm '+(adminTab==='tickets'?'btn-primary':'btn-ghost')+'" onclick="setAdminTab(\'tickets\')">'+iconTicket()+' Tickets</button>'
+    +'<button class="btn btn-sm '+(adminTab==='resets'?'btn-primary':'btn-ghost')+'" onclick="setAdminTab(\'resets\')">'+iconReset()+' ID Resets</button>'
+    +'<button class="btn btn-sm '+(adminTab==='blacklist'?'btn-primary':'btn-ghost')+'" onclick="setAdminTab(\'blacklist\')">'+iconShield()+' Blacklists</button>'
+    +'</div><div id="admin-tab-content"></div></div>';
+  renderAdminTabContent();
+}
+
+function setAdminTab(tab){
+  adminTab=tab;
+  renderAdminPage();
+}
+
+function renderAdminTabContent(){
+  if(adminTab==='tickets')renderAdminTicketsTab();
+  else if(adminTab==='resets')renderAdminResetsTab();
+  else if(adminTab==='blacklist')renderAdminBlacklistTab();
+}
+
+function renderAdminTicketsTab(){
+  const tc=document.getElementById('admin-tab-content');
+  const counts={pending:0,accepted:0,denied:0,'in-review':0,scamming:0};
+  state.tickets.forEach(t=>{if(counts[t.status]!==undefined)counts[t.status]++});
+  tc.innerHTML='<div class="grid-4">'
     +Object.entries(counts).map(([k,v])=>{
-      const labels={pending:'Pending',accepted:'Accepted',denied:'Denied','in-review':'In Review'};
+      const labels={pending:'Pending',accepted:'Accepted',denied:'Denied','in-review':'In Review',scamming:'Scamming'};
       return '<button class="stat-card'+(adminFilter===k?' active':'')+'" onclick="setAdminFilter(\''+k+'\')"><h3>'+v+'</h3><p>'+(labels[k]||k)+'</p></button>';
     }).join('')
     +'</div>'
@@ -871,15 +978,68 @@ function renderAdminPage(){
     +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">'
     +'<button class="btn btn-ghost btn-sm" onclick="adminResetPID()">Reset Player ID</button>'
     +'<button class="btn btn-ghost btn-sm" onclick="adminResetDiscord()">Reset Discord</button></div>'
-    +'<div id="admin-ticket-list"></div></div>';
+    +'<div id="admin-ticket-list"></div>';
   renderAdminTickets();
+}
+
+function renderAdminResetsTab(){
+  const tc=document.getElementById('admin-tab-content');
+  const resets=state.tickets.filter(t=>t.resetRequest);
+  if(!resets.length){
+    tc.innerHTML='<div style="text-align:center;padding:32px 0;color:#888;font-size:14px">No ID reset requests</div>';
+    return;
+  }
+  tc.innerHTML=resets.map(t=>{
+    return '<div class="ticket-card" style="margin-bottom:8px;cursor:pointer" onclick="openAdminTicket(\''+t.ticketNumber+'\')">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:16px">'
+      +'<div style="flex:1;min-width:0">'
+      +'<span class="text-xs text-mono" style="color:#888">'+t.ticketNumber+'</span>'
+      +'<p style="font-size:14px;color:#fff;margin-top:2px">Reset Request</p>'
+      +'<p class="ticket-info">'+t.playerId+' &middot; '+t.discordUsername+'</p></div>'
+      +'<span class="badge badge-'+t.status+'">'+(t.status==='pending'?'Pending':t.status==='accepted'?'Approved':t.status==='denied'?'Denied':t.status)+'</span></div></div>';
+  }).join('');
+}
+
+function renderAdminBlacklistTab(){
+  const tc=document.getElementById('admin-tab-content');
+  tc.innerHTML='<div style="text-align:center;padding:32px 0;color:#888;font-size:14px">Loading blacklist...</div>';
+  apiPost('/blacklist/list').then(data=>{
+    if(!data||!data.entries||!data.entries.length){
+      tc.innerHTML='<div style="text-align:center;padding:32px 0;color:#888;font-size:14px">No blacklisted users</div>';
+      return;
+    }
+    tc.innerHTML='<div style="display:flex;flex-direction:column;gap:8px">'
+      +data.entries.map(e=>{
+        const label=Object.keys(e)[0];
+        const entry=e[label];
+        return '<div class="ticket-card" style="margin-bottom:8px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;gap:16px">'
+          +'<div style="flex:1;min-width:0">'
+          +'<p style="font-size:14px;color:#fff;margin-top:2px"><span class="badge badge-scamming">BLACKLISTED</span></p>'
+          +'<p class="ticket-info" style="margin-top:4px">'
+          +(entry.discordUsername?'Discord: '+entry.discordUsername+'<br>':'')
+          +(entry.playerId?'PID: '+entry.playerId+'<br>':'')
+          +(entry.ticketNumber?'Ticket: '+entry.ticketNumber+'<br>':'')
+          +(entry.reason?'Reason: '+entry.reason:'')
+          +'</p></div>'
+          +'<button class="btn btn-danger btn-sm" onclick="adminRemoveBlacklist(\''+label+'\')">'+iconTrash()+' Remove</button></div></div>';
+      }).join('')+'</div>';
+  });
+}
+
+function adminRemoveBlacklist(key){
+  if(!confirm('Remove this entry from blacklist?'))return;
+  apiPost('/blacklist/remove', { key: key }).then(r=>{
+    if(r&&r.removed){showToast('Removed from blacklist','info');renderAdminBlacklistTab();}
+    else showToast('Failed to remove','error');
+  });
 }
 
 function setAdminFilter(f){
   adminFilter=f;
   document.querySelectorAll('.stat-card').forEach(c=>c.classList.remove('active'));
   const cards=document.querySelectorAll('.stat-card');
-  const idx={pending:0,accepted:1,denied:2,'in-review':3};
+  const idx={pending:0,accepted:1,denied:2,'in-review':3,scamming:4};
   if(cards[idx[f]])cards[idx[f]].classList.add('active');
   renderAdminTickets();
 }
@@ -905,7 +1065,7 @@ function renderAdminTickets(){
   const list=document.getElementById('admin-ticket-list');
   if(!filtered.length){list.innerHTML='<div style="text-align:center;padding:32px 0;color:#888;font-size:14px">No tickets match your criteria</div>';return}
   list.innerHTML=filtered.map(t=>{
-    const m={pending:'Pending',accepted:'Accepted',denied:'Denied','in-review':'In Review'};
+    const m={pending:'Pending',accepted:'Accepted',denied:'Denied','in-review':'In Review',scamming:'Scamming'};
     const label = t.resetRequest ? 'Reset Request' : (t.item || m[t.status] || t.status);
     return '<div class="ticket-card" style="margin-bottom:8px;cursor:pointer" onclick="openAdminTicket(\''+t.ticketNumber+'\')">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;gap:16px">'
@@ -920,10 +1080,11 @@ function renderAdminTickets(){
 function openAdminTicket(tn){
   const t=state.tickets.find(x=>x.ticketNumber===tn);
   if(!t)return;
-  const m={pending:['Pending','badge-pending'],accepted:['Accepted','badge-accepted'],denied:['Denied','badge-denied'],'in-review':['In Review','badge-review']};
+  const m={pending:['Pending','badge-pending'],accepted:['Accepted','badge-accepted'],denied:['Denied','badge-denied'],'in-review':['In Review','badge-review'],scamming:['Scamming','badge-scamming']};
   const[s,cls]=m[t.status]||['Pending','badge-pending'];
   const isReset=t.resetRequest;
   const modal=document.getElementById('modal');
+  const chatHtml=renderChatMessages(t, 'admin');
   document.getElementById('modal-body').innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
     +'<div class="modal-title" style="margin:0">'+(isReset?'Reset Request: ':'')+t.ticketNumber+'</div>'
     +'<button class="btn btn-danger btn-sm" onclick="adminDeleteTicket(\''+tn+'\')">'+iconTrash()+' Delete</button></div>'
@@ -933,16 +1094,60 @@ function openAdminTicket(tn){
     +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Item</span><span style="color:#fff">'+(isReset?'Reset PID Request':t.item)+'</span></div>'
     +(isReset?'<div style="display:flex;justify-content:space-between"><span style="color:#888">Old PID</span><span class="text-mono" style="color:#fff">'+t.oldPid+'</span></div>':'')
     +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Date</span><span style="color:#fff">'+new Date(t.createdAt).toLocaleDateString()+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Status</span><span style="color:#fff;text-transform:capitalize">'+t.status+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between"><span style="color:#888">Status</span><span class="badge '+cls+'" style="margin:0">'+s+'</span></div>'
     +(!isReset?'<div><span style="color:#888;display:block;margin-bottom:4px">Message Link</span><span class="text-green text-sm break-all">'+t.messageLink+'</span></div>':'')
     +(!isReset?'<div><span style="color:#888;display:block;margin-bottom:4px">Server Invite</span><span class="text-green text-sm break-all">'+t.serverInvite+'</span></div>':'')+'</div>'
     +'<div style="margin-bottom:16px"><label class="text-xs" style="display:block;margin-bottom:6px;color:#888">Review Notes</label>'
     +'<textarea id="admin-notes" rows="3" style="resize:none">'+(t.reviewNotes||'')+'</textarea></div>'
+    +'<div style="margin-bottom:12px"><label class="text-xs" style="display:block;margin-bottom:6px;color:#888">Chat with user</label>'
+    +chatHtml
+    +'<div style="margin-top:8px;display:flex;gap:8px">'
+    +'<input type="text" id="admin-chat-input" placeholder="Type a message..." style="flex:1" onkeydown="if(event.key===\'Enter\')adminSendChat(\''+tn+'\')" />'
+    +'<button class="btn btn-primary btn-sm" onclick="adminSendChat(\''+tn+'\')">Send</button></div></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
     +'<button class="btn btn-primary btn-sm" onclick="adminUpdateTicket(\''+tn+'\',\'accepted\')"><span style="display:flex;align-items:center;gap:4px">'+iconCheck()+' Approve'+(isReset?' & Reset PID':'')+'</span></button>'
     +'<button class="btn btn-danger btn-sm" onclick="openRejectReason(\''+tn+'\')"><span style="display:flex;align-items:center;gap:4px">&#10007; Deny</span></button>'
+    +'<button class="btn btn-danger btn-sm" onclick="adminReportScamming(\''+tn+'\')"><span style="display:flex;align-items:center;gap:4px">&#9888; Scamming</span></button>'
     +'<button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button></div>';
   modal.classList.add('open');
+  // Refresh chat from server
+  apiPost('/tickets/chat/fetch', { ticketNumber: tn }).then(res=>{
+    if(res&&res.chat){t.chat=res.chat;renderAdminChatInModal(tn);}
+  });
+}
+function adminSendChat(tn){
+  const input=document.getElementById('admin-chat-input');
+  const msg=input?.value?.trim();
+  if(!msg)return;
+  const t=state.tickets.find(x=>x.ticketNumber===tn);
+  if(!t)return;
+  if(!t.chat)t.chat=[];
+  t.chat.push({role:'admin',message:msg,timestamp:Date.now()/1000});
+  input.value='';
+  renderAdminChatInModal(tn);
+  apiPost('/tickets/chat/send',{ticketNumber:tn,role:'admin',message:msg});
+  if (t.discordUsername) {
+    apiPost('/tickets/notify', {
+      discordUsername: t.discordUsername,
+      ticketNumber: tn,
+      status: t.status,
+      reason: 'Staff sent a message: ' + msg
+    });
+  }
+}
+function renderAdminChatInModal(tn){
+  const t=state.tickets.find(x=>x.ticketNumber===tn);
+  if(!t||!t.chat)return;
+  const el=document.getElementById('chat-msgs');
+  if(!el)return;
+  el.innerHTML=t.chat.map(msg=>{
+    const isMe=msg.role==='admin';
+    return '<div style="display:flex;flex-direction:column;align-items:'+(isMe?'flex-end':'flex-start')+'">'
+      +'<div style="background:'+(msg.role==='admin'?'#1a3a5c':'#2a2a2a')+';padding:8px 12px;border-radius:12px;max-width:80%;font-size:13px;color:#fff">'
+      +msg.message+'</div>'
+      +'<span style="font-size:10px;color:#666;margin-top:2px">'+(msg.role==='admin'?'You':'User')+'</span></div>';
+  }).join('');
+  el.scrollTop=el.scrollHeight;
 }
 
 function openRejectReason(tn){
@@ -996,6 +1201,15 @@ function adminUpdateTicket(tn,status,rejectReason){
   saveState();closeModal();renderAdminTickets();
   syncTickets();
   showToast('Ticket '+tn+' updated to '+status,'info');
+  // Blacklist check - if scamming, auto-add to blacklist
+  if (status === 'scamming') {
+    apiPost('/blacklist/add', {
+      discordUsername: t.discordUsername,
+      playerId: t.playerId,
+      ticketNumber: tn,
+      reason: t.reviewNotes || 'Scamming'
+    }).then(r => { if (r && r.blacklisted) showToast('User blacklisted','info'); });
+  }
   // Notify user via Discord bot
   if (t.discordUsername) {
     apiPost('/tickets/notify', {
@@ -1006,6 +1220,29 @@ function adminUpdateTicket(tn,status,rejectReason){
     }).then(res => {
       if (res && res.sent) showToast('User notified via Discord','success');
       else if (res && res.error) showToast('Discord DM: ' + res.error, 'info');
+    });
+  }
+}
+
+function adminReportScamming(tn){
+  const t=state.tickets.find(x=>x.ticketNumber===tn);
+  if(!t)return;
+  if(!confirm('Flag ticket '+tn+' as scamming and blacklist user?'))return;
+  t.status='scamming';
+  saveState();closeModal();renderAdminTickets();
+  syncTickets();
+  apiPost('/blacklist/add', {
+    discordUsername: t.discordUsername,
+    playerId: t.playerId,
+    ticketNumber: tn,
+    reason: t.reviewNotes || 'Scamming'
+  }).then(r => { if (r && r.blacklisted) showToast('User blacklisted','error'); });
+  if (t.discordUsername) {
+    apiPost('/tickets/notify', {
+      discordUsername: t.discordUsername,
+      ticketNumber: tn,
+      status: 'scamming',
+      reason: t.reviewNotes || undefined
     });
   }
 }

@@ -3,10 +3,12 @@ import json
 import secrets
 import threading
 import time
+from datetime import datetime
 from pathlib import Path
 
 import discord
 from discord import app_commands
+from discord.ui import Button, View
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -109,14 +111,34 @@ def notify_ticket():
     if not link:
         return jsonify({"sent": False, "error": "User not verified with bot"})
     user_id = link["userId"]
-    status_emoji = {"accepted": "\u2705", "denied": "\u274c", "in-review": "\U0001f50d", "pending": "\u23f3"}
-    status_text = {"accepted": "Accepted", "denied": "Denied", "in-review": "In Review", "pending": "Pending"}
+    ticket = next((t for t in data.get("tickets", []) if t.get("ticketNumber", "").upper() == ticket_number.upper()), None)
+    item = ticket.get("item", "N/A") if ticket else "N/A"
+    pid = ticket.get("playerId", "N/A") if ticket else "N/A"
+    now_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+    embed = discord.Embed(color=0x2b2d6b)
+    embed.set_footer(text=f"SLA Website \u2022 You will be notified when your ticket status changes \u2022 {now_str}")
+    status_emoji = {"accepted": "\u2705", "denied": "\u274c", "in-review": "\U0001f50d", "pending": "\u23f3", "scamming": "\u26a0\ufe0f"}
+    status_text = {"accepted": "Accepted", "denied": "Denied", "in-review": "In Review", "pending": "Pending", "scamming": "Scamming"}
+    status_desc = {"accepted": "Your item ticket has been accepted!", "denied": "Your item ticket has been denied.", "in-review": "Your item ticket is now being reviewed.", "scamming": "Your ticket has been flagged for scamming."}
     emoji = status_emoji.get(status, "")
     text = status_text.get(status, status)
-    msg = f"{emoji} **Ticket {ticket_number}** \u2014 {text}"
+    if status == "pending":
+        embed.title = "Ticket Submitted"
+        embed.description = "Your ticket has been submitted and is now waiting to be checked by our staff team."
+        embed.add_field(name="Here is your Ticket ID", value=f"**{ticket_number}**", inline=False)
+        embed.add_field(name="Item", value=item, inline=True)
+        embed.add_field(name="Player ID", value=pid, inline=True)
+        embed.add_field(name="Status", value="```Open \u2014 Waiting for review```", inline=False)
+    else:
+        embed.title = f"{emoji} Ticket {ticket_number} \u2014 {text}"
+        embed.description = status_desc.get(status, f"Your ticket status has been updated to {text}.")
+        embed.add_field(name="Ticket ID", value=f"**{ticket_number}**", inline=False)
+        embed.add_field(name="Item", value=item, inline=True)
+        embed.add_field(name="Player ID", value=pid, inline=True)
+        embed.add_field(name="Status", value=f"```{emoji} {text}```", inline=False)
     if reason:
-        msg += f"\n> {reason}"
-    bot.loop.create_task(send_dm(user_id, msg))
+        embed.add_field(name="Note", value=reason, inline=False)
+    bot.loop.create_task(send_dm_embed(user_id, embed))
     return jsonify({"sent": True})
 
 @app.route("/api/tickets/sync", methods=["POST"])
@@ -157,6 +179,63 @@ def unlink():
     save_data(data)
     return jsonify({"unlinked": True})
 
+@app.route("/api/blacklist/add", methods=["POST"])
+@require_secret
+def blacklist_add():
+    body = request.get_json(silent=True) or {}
+    discord_username = body.get("discordUsername", "")
+    player_id = body.get("playerId", "")
+    ticket_number = body.get("ticketNumber", "")
+    reason = body.get("reason", "")
+    if not discord_username and not player_id:
+        return jsonify({"error": "Need discordUsername or playerId"}), 400
+    if not data.get("blacklist"):
+        data["blacklist"] = {}
+    entry = {
+        "discordUsername": discord_username,
+        "playerId": player_id,
+        "ticketNumber": ticket_number,
+        "reason": reason or "Scamming",
+        "createdAt": time.time()
+    }
+    if discord_username:
+        data["blacklist"]["discord:" + discord_username.lower()] = entry
+    if player_id:
+        data["blacklist"]["pid:" + player_id] = entry
+    save_data(data)
+    return jsonify({"blacklisted": True})
+
+@app.route("/api/blacklist/check", methods=["POST"])
+def blacklist_check():
+    body = request.get_json(silent=True) or {}
+    discord_username = body.get("discordUsername", "")
+    player_id = body.get("playerId", "")
+    bl = data.get("blacklist", {})
+    if discord_username and ("discord:" + discord_username.lower()) in bl:
+        return jsonify({"blacklisted": True, "entry": bl["discord:" + discord_username.lower()]})
+    if player_id and ("pid:" + player_id) in bl:
+        return jsonify({"blacklisted": True, "entry": bl["pid:" + player_id]})
+    return jsonify({"blacklisted": False})
+
+@app.route("/api/blacklist/list", methods=["POST"])
+@require_secret
+def blacklist_list():
+    bl = data.get("blacklist", {})
+    entries = [{k: v} for k, v in bl.items()]
+    return jsonify({"entries": entries, "count": len(entries)})
+
+@app.route("/api/blacklist/remove", methods=["POST"])
+@require_secret
+def blacklist_remove():
+    body = request.get_json(silent=True) or {}
+    key = body.get("key", "")
+    bl = data.get("blacklist", {})
+    if key in bl:
+        del bl[key]
+        save_data(data)
+        return jsonify({"removed": True})
+    return jsonify({"removed": False, "error": "Key not found"}), 404
+
 @app.route("/api/admin/login", methods=["POST"])
 def admin_login():
     body = request.get_json(silent=True) or {}
@@ -164,14 +243,46 @@ def admin_login():
         return jsonify({"success": True})
     return jsonify({"success": False}), 401
 
+@app.route("/api/tickets/chat/send", methods=["POST"])
+@require_secret
+def chat_send():
+    body = request.get_json(silent=True) or {}
+    ticket_number = body.get("ticketNumber")
+    role = body.get("role")
+    message = body.get("message")
+    if not ticket_number or not role or not message:
+        return jsonify({"error": "Missing ticketNumber, role, or message"}), 400
+    ticket = next((t for t in data.get("tickets", []) if t.get("ticketNumber", "").upper() == ticket_number.upper()), None)
+    if not ticket:
+        return jsonify({"error": "Ticket not found"}), 404
+    if not ticket.get("chat"):
+        ticket["chat"] = []
+    ticket["chat"].append({"role": role, "message": message.strip(), "timestamp": time.time()})
+    save_data(data)
+    return jsonify({"sent": True, "chat": ticket["chat"]})
+
+@app.route("/api/tickets/chat/fetch", methods=["POST"])
+@require_secret
+def chat_fetch():
+    body = request.get_json(silent=True) or {}
+    ticket_number = body.get("ticketNumber")
+    if not ticket_number:
+        return jsonify({"error": "Missing ticketNumber"}), 400
+    ticket = next((t for t in data.get("tickets", []) if t.get("ticketNumber", "").upper() == ticket_number.upper()), None)
+    if not ticket:
+        return jsonify({"error": "Ticket not found"}), 404
+    return jsonify({"chat": ticket.get("chat", [])})
+
 @app.route("/api/status")
 def status():
     return jsonify({"status": "ok", "botReady": bot.is_ready() if bot else False})
 
-async def send_dm(user_id, message):
+async def send_dm_embed(user_id, embed):
     try:
         user = await bot.fetch_user(int(user_id))
-        await user.send(message)
+        view = View()
+        view.add_item(Button(label="View My Tickets", url="https://sla-web.fly.dev/", emoji="\U0001f517"))
+        await user.send(embed=embed, view=view)
     except Exception as e:
         print(f"Failed to send DM to {user_id}: {e}")
 
